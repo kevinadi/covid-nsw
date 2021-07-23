@@ -1,0 +1,4 @@
+clize==4.2.0
+parsec==3.9
+pymongo==3.12.0
+requests==2.26.0
