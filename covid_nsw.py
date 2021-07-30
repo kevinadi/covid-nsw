@@ -60,10 +60,16 @@ def map_id(doc):
     doc['_id'] = hash(f"{doc['Venue']} {doc['Date']} {doc['Time']} {doc['Last updated date']}")
     return doc
 
+def map_place_suburb(doc):
+    if not doc.get('place'):
+        doc['place'] = map_place(doc)
+    doc['place_suburb'] = ', '.join([doc['place'], doc['Suburb']])
+    return doc
+
 def main():
     docs = get_data(datasource)
     for doc in docs:
-        d = chain(doc, [map_id, map_datetime, map_place, map_location])
+        d = chain(doc, [map_id, map_datetime, map_place, map_location, map_place_suburb])
         print(dumps(d, json_options=CANONICAL_JSON_OPTIONS))
 
 if __name__ == '__main__':
@@ -96,3 +102,7 @@ def test_map_datetime():
 def test_map_place():
     res = map_place(example_entry)
     assert res['place'] == 'Woolworth'
+
+def test_map_place_suburb():
+    res = map_place_suburb(example_entry)
+    assert res['place_suburb'] == 'Woolworth, Wolli Creek'
