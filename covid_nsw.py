@@ -2,6 +2,7 @@ from parsec import *
 from datetime import datetime
 from clize import run
 import requests
+import json
 from bson.json_util import dumps, CANONICAL_JSON_OPTIONS
 
 datasource = 'https://data.nsw.gov.au/data/dataset/0a52e6c1-bc0b-48af-8b45-d791a6d8e289/resource/f3a28eed-8c2a-437b-8ac1-2dab3cf760f9/download'
@@ -18,7 +19,8 @@ def chain(start, funcs):
     return res
 
 def get_data(url):
-    res = requests.get(url).json()['data']['monitor']
+    res = requests.get(url).text.encode('ascii', 'ignore').decode()
+    res = json.loads(res)['data']['monitor']
     return res
 
 def timeparse(ff):
