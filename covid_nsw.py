@@ -1,6 +1,7 @@
 from parsec import *
 from datetime import datetime
 from clize import run
+from copy import deepcopy
 import requests
 import json
 from bson.json_util import dumps, CANONICAL_JSON_OPTIONS
@@ -49,13 +50,17 @@ def map_place(doc):
     return doc
 
 def map_location(doc):
-    doc['location'] = {
-        'type': 'Point',
-        'coordinates': [
-            float(doc['Lon']),
-            float(doc['Lat'])
-        ]
-    }
+    try:
+        loc = {
+            'type': 'Point',
+            'coordinates': [
+                float(doc['Lon']),
+                float(doc['Lat'])
+            ]
+        }
+        doc['location'] = loc
+    except ValueError as e:
+        pass
     return doc
 
 def map_id(doc):
@@ -71,7 +76,7 @@ def map_place_suburb(doc):
 def main():
     docs = get_data(datasource)
     for doc in docs:
-        d = chain(doc, [map_id, map_datetime, map_place, map_location, map_place_suburb])
+        d = chain(doc, [map_datetime, map_place, map_location, map_place_suburb])
         print(dumps(d, json_options=CANONICAL_JSON_OPTIONS))
 
 if __name__ == '__main__':
@@ -108,3 +113,8 @@ def test_map_place():
 def test_map_place_suburb():
     res = map_place_suburb(example_entry)
     assert res['place_suburb'] == 'Woolworth, Wolli Creek'
+
+def test_map_location():
+    e = deepcopy(example_entry)
+    e['Lon'], e['Lat'] = '', ''
+    assert e.get('location') is None
