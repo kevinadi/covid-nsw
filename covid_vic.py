@@ -6,10 +6,10 @@ import requests
 import json
 from bson.json_util import dumps, CANONICAL_JSON_OPTIONS
 
-datasource = 'https://discover.data.vic.gov.au/api/3/action/datastore_search?resource_id=afb52611-6061-4a2b-9110-74c920bede77'
+datasource = 'https://discover.data.vic.gov.au/api/3/action/datastore_search?resource_id=afb52611-6061-4a2b-9110-74c920bede77&limit=10000'
 
 p_time = regex(r'[0-9]+(:[0-9]+)?(am|pm)')
-p_from_to_time = sepBy(p_time, string(' to '))
+p_from_to_time = sepBy(p_time, string(' - '))
 
 places = ['Coles', 'Woolworth', 'Chemist']
 
@@ -24,11 +24,20 @@ def get_data(url):
     res = json.loads(res)['result']['records']
     return res
 
+def timeparse(ff):
+    res = ff
+    if ':' not in ff:
+        res = f'{ff[:-2]}:00{ff[-2:]}'
+    return datetime.strptime(res, '%I:%M%p').strftime('%H:%M')
+
 def map_datetime(doc):
-    time_start = f"{doc['Exposure_date_dtm']}T{doc['Exposure_time_start_24']}"
-    time_end = f"{doc['Exposure_date_dtm']}T{doc['Exposure_time_end_24']}"
-    datetime_start = datetime.fromisoformat(time_start)
-    datetime_end = datetime.fromisoformat(time_end)
+    time_parsed = p_from_to_time.parse(doc['Exposure_time'])
+    if len(time_parsed) < 2:
+        return doc
+    time_start = timeparse(time_parsed[0])
+    time_end = timeparse(time_parsed[1])
+    datetime_start = datetime.strptime(f"{doc['Exposure_date']} {time_start}", '%d/%m/%Y %H:%M')
+    datetime_end = datetime.strptime(f"{doc['Exposure_date']} {time_end}", '%d/%m/%Y %H:%M')
     doc['start_datetime'] = datetime_start
     doc['end_datetime'] = datetime_end
     doc['start_time'] = time_start
@@ -79,4 +88,3 @@ def test_map_datetime():
 def test_map_place():
     res = map_place(example_entry)
     assert res['place'] == 'Woolworth'
-
